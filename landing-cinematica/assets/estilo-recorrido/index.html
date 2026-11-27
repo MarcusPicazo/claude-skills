@@ -56,14 +56,25 @@
   <main id="contenido">
     <!-- ============ RECORRIDO ============
          Escenario fijo (data-stage) con un fotograma por parada y, opcionalmente, un clip
-         por tramo (clip k = de la parada k a la k+1). Encima, las paradas (data-stop). -->
+         por tramo (clip k = de la parada k a la k+1). Encima, las paradas (data-stop).
+
+         PARA CAMBIAR EL NÚMERO DE PARADAS (N), toca CUATRO lugares y deja los cuatro con N:
+           1. un [data-frame] por parada (el primero sin opacity:0, los demás con opacity:0)
+           2. un enlace [data-goto] en .rail
+           3. un <article data-stop> en .stops, con su .still-bg
+           4. N-1 <video data-clip> si hay video (uno por tramo)
+         Enlace activo del header: una parada pertenece al grupo "recorrido" salvo la primera;
+         para mandarla a otro grupo ponle data-scene-group="<valor de data-nav>". -->
     <section data-world class="world" aria-label="Recorrido por [proyecto]">
       <div data-stage class="stage" style="--focus-x: 72%">
         <div class="stage__media" aria-hidden="true">
-          <!-- Reemplaza cada .frame--ph por:
-               <picture data-frame class="frame"><source srcset="assets/img/parada-1.webp" type="image/webp">
-                 <img src="assets/img/parada-1.jpg" alt="" loading="eager" fetchpriority="high" decoding="async"></picture>
-               (las siguientes con loading="lazy" fetchpriority="low"). -->
+          <!-- Reemplaza cada .frame--ph por una imagen real (o de placeholder, ver scripts/placeholders.py):
+               <picture data-frame class="frame">
+                 <source type="image/webp" srcset="assets/img/parada-1-960.webp 960w, assets/img/parada-1-1920.webp 1920w" sizes="100vw">
+                 <img src="assets/img/parada-1-1920.jpg" srcset="assets/img/parada-1-960.jpg 960w, assets/img/parada-1-1920.jpg 1920w"
+                      sizes="100vw" width="1920" height="1080" alt="" loading="eager" fetchpriority="high" decoding="async"></picture>
+               Las siguientes con style="opacity:0", loading="lazy" fetchpriority="low".
+               El .still-bg de cada parada usa el MISMO <picture> con class="still-bg" aria-hidden="true". -->
           <div data-frame class="frame frame--ph" style="--ph: 1"></div>
           <div data-frame class="frame frame--ph" style="--ph: 2; opacity: 0"></div>
           <div data-frame class="frame frame--ph" style="--ph: 3; opacity: 0"></div>
@@ -131,9 +142,9 @@
           <div class="stop__sticky">
             <div class="stop__body">
               <span class="eyebrow">[Parada 4]</span>
-              <h2 class="stop__title" id="pin-title">[Frase de cierre del recorrido]</h2>
-              <div class="pin-progress" aria-hidden="true"><span id="pin-progress-fill"></span></div>
-              <div class="stop__ctas" id="pin-ctas">
+              <h2 class="stop__title" data-pin-title>[Frase de cierre del recorrido]</h2>
+              <div class="pin-progress" aria-hidden="true"><span data-pin-progress></span></div>
+              <div class="stop__ctas" data-pin-step="0.7,0.88">
                 <a href="#contacto" class="btn btn--primary">[CTA principal]</a>
               </div>
             </div>

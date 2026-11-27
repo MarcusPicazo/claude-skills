@@ -182,11 +182,18 @@
   }
 
   // ---------- Parada fijada: secuencia por bandas de progreso ----------
+  // [data-pin-title]: se enciende palabra por palabra en el primer 25 %.
+  // [data-pin-step="a,b"]: cualquier bloque (datos, CTAs, mockup) que aparece entre a y b
+  // del progreso (0–1). Agrega los que quieras sin tocar este archivo; termina antes de 0.9.
+  // [data-pin-progress]: línea que se llena con el progreso.
   function initPin(section) {
-    const title = section.querySelector('#pin-title');
-    const ctas = section.querySelector('#pin-ctas');
-    const fillEl = section.querySelector('#pin-progress-fill');
+    const title = section.querySelector('[data-pin-title]');
+    const fillEl = section.querySelector('[data-pin-progress]');
     const body = section.querySelector('.stop__body'); // sube el bloque entero: el título no pisa la etiqueta
+    const steps = [...section.querySelectorAll('[data-pin-step]')].map((el) => {
+      const [a, b] = el.dataset.pinStep.split(',').map(Number);
+      return { el, a, b };
+    });
     let words = [];
 
     if (!reduceMotion && title) {
@@ -201,7 +208,7 @@
         return i < arr.length - 1 ? [s, document.createTextNode(' ')] : [s];
       }));
     }
-    if (!reduceMotion && ctas) gsap.set(ctas, { autoAlpha: 0, y: 12 });
+    if (!reduceMotion) steps.forEach(({ el }) => gsap.set(el, { autoAlpha: 0, y: 12 }));
 
     ScrollTrigger.create({
       trigger: section, start: 'top top', end: 'bottom bottom', scrub: true,
@@ -214,10 +221,10 @@
           wEl.style.transform = `translateY(${(1 - t) * 12}px)`;
         });
         if (body) body.style.transform = `translateY(${-40 * clamp01(p / 0.75)}px)`;
-        if (ctas) {
-          const t = band(p, 0.7, 0.88); // nítidos antes del final
-          gsap.set(ctas, { autoAlpha: t, y: (1 - t) * 12 });
-        }
+        steps.forEach(({ el, a, b }) => {
+          const t = band(p, a, b);
+          gsap.set(el, { autoAlpha: t, y: (1 - t) * 12 });
+        });
       },
     });
   }

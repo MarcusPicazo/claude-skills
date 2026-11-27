@@ -42,6 +42,11 @@ pantalla completa donde un video (o fotogramas) avanza y retrocede, y encima pas
    con el CTA final.
 6. Pie.
 
+**Recorrido corto (solo paradas)**: si el pedido es "N paradas y ya" (p. ej. llegada → … →
+visítanos), la última parada es la de conversión: hazla fijada (`stop--pin`) y mete ahí
+dirección/horario (`<dl>`) y el CTA como pasos `[data-pin-step]`. Borra lema, detalles, FAQ
+y contacto de la plantilla, y ajusta el header (`data-nav`) a los grupos que quedan.
+
 ## 3. El "mundo": escenario fijo + paradas
 
 ```html
@@ -71,6 +76,12 @@ pantalla completa donde un video (o fotogramas) avanza y retrocede, y encima pas
 - Velos: `linear-gradient(to right, fondo 0%, fondo/65 30%, transparent 70%)` en móvil y
   algo más corto en escritorio; un desvanecido de 12dvh abajo hacia el color de la página.
   Comprueba el contraste en el fotograma más claro.
+- **Número de paradas = número de fotogramas = número de puntos del raíl**; clips = paradas − 1.
+  El comentario "PARA CAMBIAR EL NÚMERO DE PARADAS" del `index.html` lista los 4 lugares.
+- Cada parada tiene además su `.still-bg` (modo fijo y sin JS): usa el mismo `<picture>`
+  que su fotograma con `class="still-bg" aria-hidden="true"`; el CSS ya ajusta la `img`.
+- Enlace activo del header: toda parada menos la primera cuenta como grupo `recorrido`;
+  `data-scene-group="x"` en una parada (o sección) la asigna al enlace `data-nav="x"`.
 - `--focus-x` (CSS var) controla `object-position` horizontal; puede variar por parada
   (`data-focus="70"`) e interpolarse con `piecewise` para "paneos" suaves en móvil.
 
@@ -167,6 +178,10 @@ mockup; el atardecer del cierre), la parada se vuelve una sección alta (150–2
 hijo sticky de `100dvh`. Como el mundo calcula `w` con los `start` de las paradas, el video
 se estira solo a lo largo de ese tramo más largo.
 
+En la plantilla: `[data-pin-title]` se enciende palabra por palabra, `[data-pin-progress]`
+es la línea de avance y **cualquier bloque con `data-pin-step="a,b"`** aparece entre `a` y `b`
+del progreso (p. ej. datos `0.45,0.65`, CTA `0.7,0.88`). Agrega bloques sin tocar el JS.
+
 Dentro del fijado, una secuencia por bandas de `progress` (ver `gsap-lenis-setup.md` §6):
 - Título palabra por palabra en el primer 20 %, sube 40 px hasta el 75 %.
 - Mockup/imagen secundaria 50–70 %; globo de mensaje 72–92 %.
@@ -201,6 +216,12 @@ explícitos (no `clearProps`) y estado inicial puesto al crear los spans.
   `mailto:`; dilo explícitamente en la entrega.
 
 ## 10. Preparar el material
+
+**Sin material todavía**: `python3 scripts/placeholders.py assets/img "Llegada" "El grano" …
+--color "#hex-acento" --bg "#hex-fondo"` crea `parada-N-{1920,960}.{webp,jpg}` con el sujeto a
+la derecha y la etiqueta dentro de la zona segura. En un celular vertical `object-fit: cover`
+muestra solo ~⅓ del ancho de una imagen 16:9 alrededor de `--focus-x`: lo importante del
+fotograma debe caber en esa franja.
 
 **Imágenes**: un fotograma por parada, misma cámara y misma luz, con espacio vacío del
 lado del texto. Si se generan con IA: crea primero la imagen "final" (la más completa) y

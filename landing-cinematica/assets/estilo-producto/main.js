@@ -1,8 +1,10 @@
 /* Plantilla "producto / startup": Lenis + GSAP ScrollTrigger, sin build.
    Cada sección en su propia función init*. Ver references/estilo-producto.md. */
 (() => {
-  if (!window.gsap || !window.ScrollTrigger) return; // sin librerías: la página ya se lee completa
-  gsap.registerPlugin(ScrollTrigger);
+  // Sin librerías (CDN caído o bloqueado) la página se lee completa, y el menú móvil y el
+  // formulario TIENEN que seguir funcionando: por eso no se hace `return` aquí arriba.
+  const hasGsap = !!(window.gsap && window.ScrollTrigger);
+  if (hasGsap) gsap.registerPlugin(ScrollTrigger);
 
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isMobile = () => matchMedia('(max-width: 767px)').matches;
@@ -27,7 +29,7 @@
   // ---------- Navbar flotante + menú móvil ----------
   function initNav() {
     const nav = document.getElementById('nav');
-    ScrollTrigger.create({ start: 'top -50', end: 99999, toggleClass: { className: 'is-floating', targets: nav } });
+    if (hasGsap) ScrollTrigger.create({ start: 'top -50', end: 99999, toggleClass: { className: 'is-floating', targets: nav } });
 
     const burger = document.getElementById('burger');
     const menu = document.getElementById('menu-movil');
@@ -82,6 +84,7 @@
   let statementST = null;
   function buildStatement() {
     const el = document.getElementById('statement-text');
+    if (!el) return;
     const text = el.dataset.text || el.textContent.trim();
     el.dataset.text = text;
     el.setAttribute('aria-label', text);
@@ -99,6 +102,8 @@
     }));
   }
   function initStatement() {
+    const statement = document.querySelector('.statement'); // por clase: puede vivir dentro de otra sección
+    if (!statement) return;
     buildStatement();
     if (reduceMotion) return;
     // Si el texto se reconstruye (p. ej. cambio de idioma), llama de nuevo a initStatement:
@@ -106,7 +111,7 @@
     if (statementST) statementST.kill();
     const zoom = document.querySelector('.statement__zoom');
     gsap.set(zoom, { clearProps: 'scale,opacity' });
-    const tl = gsap.timeline({ scrollTrigger: { trigger: '#manifiesto', start: 'top top', end: 'bottom bottom', scrub: 1.3 } });
+    const tl = gsap.timeline({ scrollTrigger: { trigger: statement, start: 'top top', end: 'bottom bottom', scrub: 1.3 } });
     tl.to('#statement-text .c', { opacity: 1, y: 0, scale: 1, stagger: 0.02, ease: 'power2.out', duration: 3 })
       .to(zoom, { scale: 1, duration: 1.5 })                        // pausa de lectura
       .to(zoom, { scale: isMobile() ? 40 : 60, ease: 'power4.in', duration: 4 })
@@ -126,15 +131,48 @@
     });
   }
 
-  // ---------- Tarjetas de acceso: giro 3D alternando lado ----------
+  // ---------- Filas de tarjetas con giro 3D alternando lado ([data-flip-row]) ----------
   function initFlip() {
-    const row = document.getElementById('flip-row');
-    if (!row || reduceMotion) return;
+    if (reduceMotion) return;
+    document.querySelectorAll('[data-flip-row]').forEach((row) => initFlipRow(row));
+  }
+  function initFlipRow(row) {
     const tl = gsap.timeline({ scrollTrigger: { trigger: row, start: 'top bottom-=30', end: 'top 50%', scrub: 0.6 } });
     [...row.children].forEach((card, i) => {
       tl.fromTo(card,
         { opacity: 0, y: 20, rotateY: i % 2 ? 55 : -55, transformPerspective: 800 },
         { opacity: 1, y: 0, rotateY: 0, duration: 1 }, i * 0.12);
+    });
+  }
+
+  // ---------- Lista de espera ----------
+  // data-endpoint vacío = demo: valida y muestra éxito sin enviar nada (dilo en la entrega).
+  // Con endpoint (Formspree, Netlify Forms, propio): POST con FormData y Accept: JSON.
+  function initForm() {
+    const form = document.getElementById('waitlist-form');
+    if (!form) return;
+    const msg = document.getElementById('form-msg');
+    const email = form.elements.email;
+    const button = form.querySelector('button[type="submit"]');
+    const say = (text, ok) => { msg.textContent = text; msg.className = `form__msg ${ok ? 'is-ok' : 'is-error'}`; };
+    let sending = false; // candado contra doble toque
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (sending) return;
+      const valid = email.value.trim() !== '' && email.checkValidity();
+      email.setAttribute('aria-invalid', String(!valid));
+      if (!valid) { say(form.dataset.msgInvalid, false); email.focus(); return; }
+      const endpoint = form.dataset.endpoint;
+      sending = true; button.disabled = true;
+      try {
+        if (endpoint) {
+          const res = await fetch(endpoint, { method: 'POST', body: new FormData(form), headers: { Accept: 'application/json' } });
+          if (!res.ok) throw new Error(res.status);
+        }
+        say(endpoint ? form.dataset.msgOk : `${form.dataset.msgOk} (Demo: no se envió nada.)`, true);
+        form.reset(); email.removeAttribute('aria-invalid');
+      } catch { say(form.dataset.msgError, false); }
+      finally { sending = false; button.disabled = false; }
     });
   }
 
@@ -155,8 +193,10 @@
   }
 
   document.getElementById('year').textContent = new Date().getFullYear();
+  initNav();   // funciona sin GSAP
+  initForm();  // funciona sin GSAP
+  if (!hasGsap) return;
   initLenis();
-  initNav();
   initNavScroll();
   initHero();
   initUps();

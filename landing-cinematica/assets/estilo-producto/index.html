@@ -41,6 +41,7 @@
       <nav class="nav__links" aria-label="Principal">
         <a href="#que-es">Qué es</a>
         <a href="#funciones">Funciones</a>
+        <a href="#testimonios">Testimonios</a>
         <a href="#acceso">Acceso</a>
       </nav>
       <a href="#acceso" class="btn btn--primary nav__cta">[CTA principal]</a>
@@ -51,6 +52,7 @@
     <nav class="nav__mobile" id="menu-movil" aria-label="Menú móvil" hidden>
       <a href="#que-es">Qué es</a>
       <a href="#funciones">Funciones</a>
+      <a href="#testimonios">Testimonios</a>
       <a href="#acceso">Acceso</a>
       <a href="#acceso" class="btn btn--primary">[CTA principal]</a>
     </nav>
@@ -109,19 +111,50 @@
       </div>
     </section>
 
-    <!-- 5. Acceso / conversión: tarjetas que se voltean -->
-    <section id="acceso" class="section">
+    <!-- 5. Testimonios: SOLO reales. Si el usuario pide de ejemplo (demo), cada tarjeta lleva
+         la etiqueta "Ejemplo", hay una nota visible y el autor es genérico ("Cliente de ejemplo"). -->
+    <section id="testimonios" class="section">
       <div class="wrap">
-        <h2 class="h2" data-up>[Llamada a la acción final]</h2>
-        <div class="flip-row" id="flip-row">
-          <article class="card">
-            <h3>[Opción A]</h3><p>[Descripción breve.]</p>
-            <a class="btn btn--primary" href="#">[Acción A — enlace PENDIENTE]</a>
-          </article>
-          <article class="card">
-            <h3>[Opción B]</h3><p>[Descripción breve.]</p>
-            <a class="btn btn--ghost" href="#">[Acción B — enlace PENDIENTE]</a>
-          </article>
+        <h2 class="h2" data-up>[Lo que dicen]</h2>
+        <div class="quotes" data-flip-row>
+          <figure class="card quote">
+            <blockquote>“[Cita real, una o dos frases.]”</blockquote>
+            <figcaption>[Nombre] · [Rol o contexto]</figcaption>
+          </figure>
+          <figure class="card quote">
+            <blockquote>“[Cita real.]”</blockquote>
+            <figcaption>[Nombre] · [Rol o contexto]</figcaption>
+          </figure>
+          <figure class="card quote">
+            <blockquote>“[Cita real.]”</blockquote>
+            <figcaption>[Nombre] · [Rol o contexto]</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Acceso / lista de espera. data-endpoint vacío = demo (no envía nada). -->
+    <section id="acceso" class="section">
+      <div class="wrap wrap--narrow">
+        <div class="card waitlist" data-up>
+          <h2 class="h2">[Llamada a la acción final]</h2>
+          <p>[Qué recibe quien se apunta y cuándo.]</p>
+          <form class="form" id="waitlist-form" novalidate
+                data-endpoint=""
+                data-msg-ok="[¡Listo! Te avisaremos.]"
+                data-msg-invalid="Escribe un correo válido."
+                data-msg-error="No se pudo enviar. Intenta de nuevo.">
+            <label class="field">
+              <span>Correo</span>
+              <input type="email" name="email" required autocomplete="email" placeholder="tu@correo.com">
+            </label>
+            <label class="field">
+              <span>[Campo opcional] <small>(opcional)</small></span>
+              <input type="text" name="extra">
+            </label>
+            <button type="submit" class="btn btn--primary">[CTA principal]</button>
+            <p class="form__msg" id="form-msg" role="status" aria-live="polite"></p>
+          </form>
         </div>
       </div>
     </section>

@@ -23,6 +23,8 @@ body {
   overflow-x: clip;              /* nunca overflow-x:hidden en html: rompe sticky */
   overscroll-behavior-x: none;
 }
+/* Recorta desbordes laterales de animaciones sin romper sticky (clip no crea scroll). */
+main { overflow-x: clip; }
 h1, h2, h3 { font-family: var(--font-display); font-weight: 400; line-height: 1.05; text-wrap: balance; margin: 0; }
 p { text-wrap: pretty; margin: 0; }
 a { color: inherit; }
@@ -91,6 +93,7 @@ html.js:not(.stills) .stage { display: block; }   /* sin JS o en modo fijo: imá
 html:not(.js) .stops, html.stills .stops { margin-top: 0; }
 .stop { position: relative; min-height: 100vh; min-height: 100lvh; display: flex; align-items: flex-end; padding: 6rem 1.5rem 4rem; }
 .still-bg { position: absolute; inset: 0; z-index: -1; }
+.still-bg img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: var(--focus-x, 72%) 50%; }
 .still-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, var(--color-bg) 10%, transparent 70%); }
 html.js:not(.stills) .still-bg { display: none; }
 .stop__body { max-width: 40rem; display: grid; gap: 1rem; }
