@@ -16,6 +16,7 @@
   --gutter: 16px;
   --toque: 44px;                    /* tamaño mínimo de objetivo táctil */
   --panel-ancho: 360px;
+  --chip-min: 150px;               /* ancho mínimo de cada botón de parte en celular (nombres cortos: 90px) */
   --chips-alto: 132px;              /* reservado abajo en móvil (se recalcula por JS) */
 }
 
@@ -67,11 +68,8 @@ button { font: inherit; }
 .topbar h1 { font-size: clamp(1.35rem, 2.6vw, 2rem); text-shadow: 0 2px 10px rgba(0,0,0,.5); }
 .instruccion { margin: 4px 0 0; font-size: 15px; color: var(--color-texto-claro); opacity: .9; }
 
-.nota-escala {
-  position: fixed; z-index: 4; margin: 0;
-  left: var(--gutter); bottom: calc(var(--chips-alto) + 8px);
-  max-width: min(420px, calc(100% - 2 * var(--gutter)));
-  font-size: 13px; color: var(--color-texto-claro); opacity: .85;
+.nota-escala {          /* dentro del encabezado: nunca encima del modelo */
+  margin: 6px 0 0; max-width: 460px; font-size: 13px; color: var(--color-texto-claro); opacity: .85;
 }
 .nota-escala:empty { display: none; }
 
@@ -176,10 +174,23 @@ button { font: inherit; }
   .quiz.modo-tocar { max-height: 34dvh; }
 }
 
-/* Celular: partes en cuadrícula de 2 columnas (ocupa menos alto que filas sueltas) */
+/* Celular: partes en cuadrícula (ocupa menos alto que filas sueltas) */
 @media (max-width: 899px) {
-  .chips-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); width: 100%; }
-  .chip { padding: 0 12px; }
+  .chips-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--chip-min), 1fr)); width: 100%; }
+  .chip { padding: 6px 12px; text-align: left; line-height: 1.2; } /* nombres largos en 2 líneas, alineados */
+  /* Franja de fondo tras el título: el modelo puede pasar por debajo sin perder contraste */
+  .topbar::before {
+    content: ""; position: absolute; z-index: -1;
+    inset: calc(-1 * var(--gutter) - env(safe-area-inset-top)) calc(-1 * var(--gutter)) -24px;
+    background: linear-gradient(to bottom, var(--color-fondo) 70%, transparent);
+  }
+  /* Quiz: en preguntas que no se responden tocando partes, la botonera sobra → más alto para el quiz */
+  body[data-modo="quiz-opcion"] .chips-lista,
+  body[data-modo="quiz-ajustar"] .chips-lista,
+  body[data-modo="quiz-fin"] .chips-lista,
+  body[data-modo^="quiz"] [data-quiz-abrir] { display: none; }
+  body[data-modo="quiz-opcion"] .quiz,
+  body[data-modo="quiz-fin"] .quiz { max-height: calc(100dvh - var(--chips-alto) - 110px); }
 }
 
 @media (prefers-reduced-motion: no-preference) {

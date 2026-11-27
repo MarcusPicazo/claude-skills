@@ -74,6 +74,12 @@ horizontal en celular**.
 - Tableta en horizontal se comporta como escritorio (≥ 900 px): revisa que el panel lateral
   no tape el modelo (zona libre).
 - Sin hover: todo lo que el hover muestra debe estar disponible al tocar.
+- **Presupuesto vertical a 375×667**: encabezado ~100 px (+ recuadro 2D si lo hay, a la
+  derecha del título), modelo ≥ 200 px, controles (`range` 44 px + etiqueta) y botonera. Si
+  no cabe: nota de escala dentro del encabezado, botones de nombres cortos en una fila
+  (`--chip-min: 90px`), y en quiz se oculta lo que no se usa (interaccion-y-ui.md §15).
+- Texto sobre el modelo: nunca sin fondo. La plantilla pone una franja degradada tras el
+  título en celular.
 
 ## 5. iOS Safari y Android
 

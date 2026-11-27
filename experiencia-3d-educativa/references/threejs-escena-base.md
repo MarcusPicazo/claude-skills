@@ -206,7 +206,33 @@ el.style.transform = `translate(${(v.x + 1) / 2 * W}px, ${(1 - v.y) / 2 * H}px) 
 - Escribe `transform` una vez por frame; no `left/top` (provoca layout).
 
 ## 10. Limpieza
+11. Contrato del modelo y casos especiales (alargado, emisivo, luz-concepto)
 
 Al reemplazar un modelo (cambio de nivel, de modo): `geometry.dispose()`,
 `material.dispose()`, `texture.dispose()` y quítalo de `clicables`. Si no, la memoria de la
 GPU crece y el celular pierde el contexto WebGL.
+
+## 11. Contrato del modelo y casos especiales
+
+`construirModelo` devuelve `{ grupo, clicables, radio, acercamiento?, medidas?, orientar? }`
+(ver SKILL.md §1.1). Casos que aparecieron al usar la plantilla:
+
+- **Modelo alargado** (Sol–Tierra–Luna, una cadena alimenticia, una línea de tiempo): la
+  esfera envolvente deja la mitad de la pantalla vacía. Devuelve
+  `medidas(aspect) → { ancho, alto }` (semiejes en pantalla; si la cámara está inclinada,
+  multiplica la profundidad por el seno de la elevación) y la cámara encuadra una caja.
+- **Celular vertical**: un modelo ancho queda diminuto. `orientar(vista, aspect)` gira el
+  grupo 90° cuando `aspect < 1`. Si la luz está dentro del grupo, gira con él.
+- **Encuadre con panel abierto**: `enfocar()` se llama después de mostrar el panel y usa
+  `distanciaBase(true)` (zona libre con panel). Si no, en escritorio el panel lateral corta el modelo.
+- **Objetos que emiten luz** (`emissive`): el resaltado guarda `userData.emisivoBase` y suma.
+- **Luz como concepto**: sin luz en la cámara; `DirectionalLight` dentro del grupo en la
+  posición de la fuente, con `luz.target` también dentro del grupo; `AmbientLight` ≤ 0.15
+  para que el lado oscuro se intuya sin parecer iluminado.
+- **Cortes de media cúpula** (célula, fruto, volcán): hemisferio inferior completo + mitad
+  trasera del superior (`SphereGeometry(r, s, s/4, 0, π, 0, π/2)`); bordes con
+  `RingGeometry(rInt, r, s, 1, 0, π)` girado `-π/2` en X y dos cuartos verticales. Los
+  objetos internos quedan a la vista desde arriba y de frente. No pongas un "piso" opaco en
+  el corte: tapa todo lo que está debajo.
+- **Objetos que se mueven por un valor** (`moverLuna(grados)`): devuélvelos desde
+  `construirModelo` y llámalos desde el punto único de cambio de la UI.

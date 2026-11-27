@@ -86,6 +86,11 @@ Proceso:
 - Si no puedes verificar: `[PENDIENTE: verificar dato X]`, visible y en la lista de entrega.
 - Muestra la fuente en el panel (una línea pequeña) y, si hay varias, en un "Créditos".
 
+Si no puedes abrir las fuentes (red bloqueada, sin internet): usa solo datos de referencia
+estables y de nivel escolar, evita cifras finas o recientes, y dilo en la entrega ("fuentes
+citadas, no comprobadas en línea en esta sesión"). Cita la **página concreta** por parte, no
+solo el sitio.
+
 Errores típicos que se cuelan: cifras de memoria desactualizadas, unidades mezcladas
 (°C/°F, millas/km), escalas largas/cortas de "billón" entre idiomas (en español
 1 billón = 10¹²; en inglés *billion* = 10⁹: al traducir, convierte), y redondeos que cambian
@@ -102,6 +107,12 @@ el sentido.
 - Movimientos: no hagas girar algo en el sentido equivocado ni a velocidades que sugieran
   relaciones falsas; si es acelerado, di "tiempo acelerado".
 - Etiquetas de partes con el nombre del programa escolar del país del docente.
+- **Astronomía vista desde la Tierra**: lo que se ve depende del hemisferio (la Luna
+  creciente se ilumina a la derecha en el norte y a la izquierda en el sur; las estaciones
+  se invierten). Elige uno (por defecto, norte) y dilo en pantalla en una línea.
+- **Absolutos en biología**: casi toda regla tiene excepciones (células sin núcleo o sin
+  mitocondrias). Usa "la mayoría", "varía según".
+- **Formato de números** igual en todo el material, incluido lo que genera el JS.
 
 ## 6. Diseño del quiz
 
