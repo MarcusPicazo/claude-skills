@@ -1,0 +1,32 @@
+# Dependencias
+node_modules/
+package-lock.json
+npm-debug.log*
+__pycache__/
+*.pyc
+.venv/
+
+# Salidas del verificador (capturas) y pruebas locales
+capturas/
+**/capturas/
+test-results/
+playwright-report/
+pruebas/
+
+# Copias de librerías descargadas con `npm pack` para probar sin CDN
+*.tgz
+package/
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*~
+
+# Configuración local y secretos
+.env
+.env.*
+.claude/settings.local.json
