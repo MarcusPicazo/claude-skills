@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    // Síncrono y antes del CSS: decide video vs. imágenes fijas sin parpadeo.
+    document.documentElement.classList.add('js');
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    (function () {
+      try {
+        var rm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var c = navigator.connection;
+        var slow = !!(c && (c.saveData || /2g/.test(c.effectiveType || '')));
+        if (rm || slow) document.documentElement.classList.add('stills');
+      } catch (e) {}
+    })();
+  </script>
+  <title>[Proyecto] · [Qué es y dónde]</title>
+  <meta name="description" content="[Qué es el lugar o proyecto, para quién y qué lo hace distinto, en menos de 155 caracteres.]">
+  <link rel="canonical" href="https://example.com/">
+  <meta property="og:title" content="[Proyecto] · [Qué es y dónde]">
+  <meta property="og:description" content="[Descripción corta]">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://example.com/">
+  <meta property="og:image" content="https://example.com/og-image.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#f2eee8">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Manrope:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="https://unpkg.com/lenis@1.1.20/dist/lenis.css">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Si la primera parada usa imagen real, precárgala:
+  <link rel="preload" as="image" href="assets/img/parada-1.webp" fetchpriority="high"> -->
+
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script defer src="https://unpkg.com/lenis@1.1.20/dist/lenis.min.js"></script>
+  <script defer src="main.js"></script>
+</head>
+<body>
+  <a class="skip" href="#contenido">Saltar al contenido</a>
+
+  <header class="header" id="header">
+    <a href="#parada-1" class="header__logo" id="logo">[proyecto]</a>
+    <nav class="header__links" aria-label="Principal">
+      <a href="#parada-2" data-nav="recorrido">Recorrido</a>
+      <a href="#detalles" data-nav="detalles">Detalles</a>
+      <a href="#contacto" data-nav="contacto">Contacto</a>
+    </nav>
+    <a href="#contacto" class="btn btn--primary header__cta">[CTA principal]</a>
+  </header>
+
+  <main id="contenido">
+    <!-- ============ RECORRIDO ============
+         Escenario fijo (data-stage) con un fotograma por parada y, opcionalmente, un clip
+         por tramo (clip k = de la parada k a la k+1). Encima, las paradas (data-stop). -->
+    <section data-world class="world" aria-label="Recorrido por [proyecto]">
+      <div data-stage class="stage" style="--focus-x: 72%">
+        <div class="stage__media" aria-hidden="true">
+          <!-- Reemplaza cada .frame--ph por:
+               <picture data-frame class="frame"><source srcset="assets/img/parada-1.webp" type="image/webp">
+                 <img src="assets/img/parada-1.jpg" alt="" loading="eager" fetchpriority="high" decoding="async"></picture>
+               (las siguientes con loading="lazy" fetchpriority="low"). -->
+          <div data-frame class="frame frame--ph" style="--ph: 1"></div>
+          <div data-frame class="frame frame--ph" style="--ph: 2; opacity: 0"></div>
+          <div data-frame class="frame frame--ph" style="--ph: 3; opacity: 0"></div>
+          <div data-frame class="frame frame--ph" style="--ph: 4; opacity: 0"></div>
+          <div class="clips">
+            <!-- Un <video> por tramo, cuando existan los clips (ver references/rendimiento-movil.md §3):
+            <video data-clip data-src-desktop="assets/video/clip-1-1920.mp4" data-src-mobile="assets/video/clip-1-960.mp4"
+                   muted playsinline preload="none" disablepictureinpicture disableremoteplayback tabindex="-1" class="clip"></video>
+            <video data-clip data-src-desktop="assets/video/clip-2-1920.mp4" data-src-mobile="assets/video/clip-2-960.mp4"
+                   muted playsinline preload="none" disablepictureinpicture disableremoteplayback tabindex="-1" class="clip"></video>
+            <video data-clip data-src-desktop="assets/video/clip-3-1920.mp4" data-src-mobile="assets/video/clip-3-960.mp4"
+                   muted playsinline preload="none" disablepictureinpicture disableremoteplayback tabindex="-1" class="clip"></video>
+            -->
+          </div>
+        </div>
+        <div class="veil" aria-hidden="true"></div>
+
+        <nav class="rail" aria-label="Paradas del recorrido">
+          <span class="rail__track" aria-hidden="true"><span class="rail__fill" data-rail-fill></span></span>
+          <a href="#parada-1" data-goto aria-current="true"><span class="rail__label">[Inicio]</span><span class="rail__dot"></span></a>
+          <a href="#parada-2" data-goto aria-current="false"><span class="rail__label">[Parada 2]</span><span class="rail__dot"></span></a>
+          <a href="#parada-3" data-goto aria-current="false"><span class="rail__label">[Parada 3]</span><span class="rail__dot"></span></a>
+          <a href="#parada-4" data-goto aria-current="false"><span class="rail__label">[Parada 4]</span><span class="rail__dot"></span></a>
+        </nav>
+
+        <p class="stage__hint" data-hint aria-hidden="true">Desliza para recorrer <span></span></p>
+      </div>
+
+      <div class="stops">
+        <article id="parada-1" data-stop class="stop">
+          <div class="still-bg frame--ph" style="--ph: 1" aria-hidden="true"></div>
+          <div class="stop__body">
+            <span class="eyebrow">[Etiqueta]</span>
+            <h1 class="stop__title">[Titular del lugar o proyecto]</h1>
+            <p class="stop__text">[Una o dos frases: qué es y por qué importa.]</p>
+            <div class="stop__ctas">
+              <a href="#contacto" class="btn btn--primary">[CTA principal]</a>
+              <a href="#detalles" class="btn btn--ghost">[CTA secundario]</a>
+            </div>
+            <p class="stop__facts">[Dato real] · [Dato real] · [Dato real]</p>
+          </div>
+        </article>
+
+        <article id="parada-2" data-stop class="stop">
+          <div class="still-bg frame--ph" style="--ph: 2" aria-hidden="true"></div>
+          <div class="stop__body">
+            <span class="eyebrow">[Parada 2]</span>
+            <h2 class="stop__title">[Lo que se ve aquí]</h2>
+            <p class="stop__text">[Texto breve de esta parada.]</p>
+          </div>
+        </article>
+
+        <article id="parada-3" data-stop class="stop">
+          <div class="still-bg frame--ph" style="--ph: 3" aria-hidden="true"></div>
+          <div class="stop__body">
+            <span class="eyebrow">[Parada 3]</span>
+            <h2 class="stop__title">[Lo que se ve aquí]</h2>
+            <p class="stop__text">[Texto breve de esta parada.]</p>
+          </div>
+        </article>
+
+        <!-- Última parada fijada: más scroll para que el clip se note y entren piezas en secuencia. -->
+        <article id="parada-4" data-stop class="stop stop--pin" data-pin>
+          <div class="still-bg frame--ph" style="--ph: 4" aria-hidden="true"></div>
+          <div class="stop__sticky">
+            <div class="stop__body">
+              <span class="eyebrow">[Parada 4]</span>
+              <h2 class="stop__title" id="pin-title">[Frase de cierre del recorrido]</h2>
+              <div class="pin-progress" aria-hidden="true"><span id="pin-progress-fill"></span></div>
+              <div class="stop__ctas" id="pin-ctas">
+                <a href="#contacto" class="btn btn--primary">[CTA principal]</a>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ LEMA ============ -->
+    <section class="tagline" aria-label="Lema">
+      <p class="tagline__text" data-tagline>[Una frase larga y evocadora sobre el lugar, que se enciende palabra por palabra al leerla.]</p>
+    </section>
+
+    <!-- ============ CONTENIDO ============ -->
+    <section id="detalles" class="section" data-scene-group="detalles">
+      <div class="wrap">
+        <h2 class="h2" data-reveal>[Detalles]</h2>
+        <div class="grid">
+          <article class="tile" data-reveal style="--d: 0ms"><h3>[Detalle 1]</h3><p>[Descripción.]</p></article>
+          <article class="tile" data-reveal style="--d: 120ms"><h3>[Detalle 2]</h3><p>[Descripción.]</p></article>
+          <article class="tile" data-reveal style="--d: 240ms"><h3>[Detalle 3]</h3><p>[Descripción.]</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="faq-title">
+      <div class="wrap wrap--narrow">
+        <h2 class="h2" id="faq-title" data-reveal>Preguntas frecuentes</h2>
+        <details class="faq" data-reveal><summary>[Pregunta 1]<span aria-hidden="true">+</span></summary><p>[Respuesta.]</p></details>
+        <details class="faq" data-reveal><summary>[Pregunta 2]<span aria-hidden="true">+</span></summary><p>[Respuesta.]</p></details>
+      </div>
+    </section>
+
+    <section id="contacto" class="section section--alt" data-scene-group="contacto">
+      <div class="wrap wrap--narrow">
+        <h2 class="h2" data-reveal>[Hablemos]</h2>
+        <p data-reveal>[Invitación breve a escribir o agendar.]</p>
+        <div class="stop__ctas" data-reveal>
+          <a href="#" class="btn btn--primary">[Agendar — enlace PENDIENTE]</a>
+          <a href="#" class="btn btn--ghost">[WhatsApp / correo — enlace PENDIENTE]</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>© <span id="year"></span> [Proyecto]</p>
+    <a href="#">[Aviso de privacidad]</a>
+  </footer>
+</body>
+</html>
