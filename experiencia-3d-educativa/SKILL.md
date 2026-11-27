@@ -40,6 +40,12 @@ tomaste**, para que el docente la corrija.
 | Three.js | Módulo ES por CDN con versión fija (0.160.0) + plan B sin 3D. |
 | Estilo visual | Escena oscura neutra, paneles blancos, 1 acento; colores del modelo con significado (no decorativos). |
 | Datos y cifras | Solo de fuentes verificables (ver §2). Si no se puede verificar: `[PENDIENTE: verificar …]` visible, nunca inventado. |
+| Fuente por parte | Cada parte lleva su propia `fuente` (página concreta); `CONTENIDO.fuente` solo como respaldo. |
+| Fuentes sin acceso a internet | Si no puedes abrir la fuente (red bloqueada), usa solo datos de referencia estables y **dilo en la entrega**: "fuentes citadas, no comprobadas en línea". |
+| Formato de números | Español: punto decimal y coma de miles (`29.5`, `384,400`), igual en textos y en lo que genera el JS (`toLocaleString('es-MX')`). Otro país: pregunta. Nunca mezclar. |
+| Aproximaciones | Primaria: "unos 150 millones". Secundaria en adelante: "≈ 150 millones". |
+| Astronomía vista desde la Tierra | Hemisferio norte, con una línea visible: "en el hemisferio sur se ve al revés". |
+| Tema de causa → efecto | Un control real (`<input type="range">` con `<label>`) + arrastre en 3D + una vista 2D del efecto que funciona sin 3D (§1.2). |
 | Escala | Real cuando se pueda; si se exagera algo para verlo, se dice en pantalla. |
 | Personaje o mascota | Ninguno, salvo que lo pidan (si lo piden: SVG propio, sin marcas ni personajes con derechos). |
 
@@ -66,11 +72,62 @@ main.js      1) CONTENIDO  2) UI sin 3D (botones, panel, quiz)  3) escena 3D (co
 ```
 
 Para adaptarla:
-1. Reemplaza `CONTENIDO` (partes, datos, fuente, quiz, textos). Es el único lugar con texto.
-2. Reescribe `construirModelo(THREE, …)`: devuelve `{ grupo, clicables, … }` y cada malla
-   clicable lleva `userData.id` igual al `id` de su parte en `CONTENIDO.partes`.
+1. Reemplaza `CONTENIDO` (partes, datos, fuente por parte, quiz, textos). Único lugar con texto.
+2. Reescribe `construirModelo(THREE, …)` cumpliendo el contrato de §1.1.
 3. Ajusta la vista inicial (`VISTA`) y `acercamiento` por parte.
-4. Cambia `<title>`, `description` y los colores de los tokens si hace falta.
+4. Cambia `<title>`, `description`, `aria-label` de la botonera y la nota de escala.
+5. Si los nombres de las partes son cortos (≤ 8 letras), `--chip-min: 90px` para una sola fila.
+
+### 1.1 Contrato de `construirModelo`
+
+```js
+return {
+  grupo,              // THREE.Group con todo el modelo
+  clicables,          // mallas que reciben toques; cada una con userData.id = CONTENIDO.partes[].id
+  radio,              // radio de la esfera que envuelve el modelo (encuadre)
+  acercamiento,       // opcional { id: 0.7…1 } — cuánto acercar al elegir cada parte
+  medidas,            // opcional (aspect) => ({ ancho, alto }) — semiejes en pantalla para modelos
+                      //   alargados (un sistema Sol–Tierra, una cadena): encuadre de caja, no de esfera
+  orientar,           // opcional (vista, aspect) => void — gira el grupo: hacia el corte, o 90° en vertical
+  /* + funciones propias del tema que use la UI, p. ej. moverLuna(grados) */
+};
+```
+
+- Varias mallas pueden compartir id (todas las piezas de una parte) y material (se resaltan juntas).
+- Piezas repetidas → `InstancedMesh` con id; piezas diminutas → zona de toque invisible
+  más grande (`MeshBasicMaterial({ visible: false })`) en `clicables` con el mismo id.
+- Objetos que emiten luz (`emissive`): el resaltado suma sobre su brillo propio, no lo borra.
+- Si la luz **es** el concepto (fases, estaciones, sombras), quita la luz atada a la cámara
+  y pon la luz dentro del modelo, en la posición física de la fuente.
+- Aleatoriedad (posiciones de organelos, estrellas) con semilla fija.
+- Modelo alargado en celular vertical: `orientar` lo gira 90° para que el eje largo quede
+  vertical (la luz y las piezas giran con el grupo: la física no cambia).
+
+### 1.2 Temas de causa → efecto (un control cambia el modelo)
+
+Ejemplos: fases lunares, estaciones, palancas, circuitos, estados del agua. La plantilla
+trae partes que se tocan; para estos temas agrega (detalle en `references/interaccion-y-ui.md` §11–13):
+1. **Un solo punto de cambio** `ponerValor(v)` que llaman el control, el arrastre en 3D y el quiz.
+2. **Control real**: `<input type="range">` con `<label>` visible, `aria-valuetext` con el
+   estado ("Día 7: Cuarto creciente"), alto ≥ 44 px, en la botonera.
+3. **Arrastre en 3D** del objeto a lo largo de su trayectoria (escucha `pointerdown` en
+   **captura** sobre `#stage` y apaga OrbitControls mientras dura).
+4. **Vista del efecto** (recuadro 2D en el encabezado: "así se ve desde…") dibujada con
+   `<canvas>` 2D: es lo que se aprende y **funciona sin 3D**, así el plan B sigue enseñando.
+5. Al mover el control, **cierra el panel de información** en modo explorar: en celular lo
+   tapa todo y el alumno no ve el efecto.
+6. Pregunta de quiz `tipo: 'ajustar'` con `comprobar()` (ver §2.6).
+
+### 1.3 Ganchos para pruebas
+
+`window.__experiencia = { escena }` y `escena.dondeEsta(id)` → punto de pantalla donde un
+toque cae sobre esa parte. `verificar.cjs` lo usa para tocar cada parte en el modelo 3D.
+Mantenlo al adaptar (también sirve para depurar desde la consola). Prueba el centro y
+varios vértices de cada malla (en anillos y tubos el centro está vacío) y el verificador
+espera a que la cámara deje de moverse antes de medir. Solo acepta puntos "firmes" (el
+punto y sus vecinos a ±3 px dan la misma parte). Si reporta partes "sin zona firme para el
+dedo" (ocultas o muy delgadas, p. ej. sacos del Golgi a 375 px): agrega una zona de toque
+invisible más grande, muévelas a la vista o di en la instrucción que se eligen con su botón.
 
 Qué ya resuelve la plantilla (no lo rompas al adaptar):
 - **Un solo punto de entrada** `elegir(id)` para modelo 3D y botones: mismo resultado.
@@ -109,10 +166,17 @@ módulos ES y el importmap no cargan desde disco.
 5. **Sin errores conceptuales por estética**: colores, tamaños y movimientos no deben
    enseñar algo falso (órbitas a escala ≠ tamaños a escala; si mezclas escalas, dilo).
 6. **El quiz mide los conceptos del §0**, no detalles de memoria. Al menos una pregunta se
-   responde **interactuando con el modelo**. Cada respuesta tiene una explicación corta
-   que corrige sin castigar ("Casi." + por qué).
+   responde **interactuando con el modelo**: `tipo: 'tocar'` (toca la parte que…) o
+   `tipo: 'ajustar'` (mueve el control hasta que…, con `comprobar: () => boolean` y
+   opcional `alFallar()` que muestra la posición correcta). Cada respuesta tiene una
+   explicación corta que corrige sin castigar ("Casi." + por qué).
 7. **Neutral y genérico**: sin nombres de alumnos, docentes, escuelas ni marcas, salvo que
    el docente los dé para su propia versión.
+8. **Cuidado con los absolutos**: "de cientos a miles de mitocondrias" es falso para algunas
+   células (los glóbulos rojos maduros no tienen). Prefiere "varía según…; algunas tienen…".
+   Simplificaciones como "instrucciones del ADN" → "instrucciones que vienen del ADN".
+9. **Términos técnicos con apoyo concreto**: si la fase se llama "gibosa", muestra también
+   "vemos iluminada: 75 %"; si dices "lípidos", añade "(un tipo de grasa)".
 
 ## 3. Reglas técnicas
 
@@ -202,6 +266,24 @@ Salieron de revisar proyectos educativos reales en Three.js. Revísalos antes de
     hay dato real para esa parte, no la hagas clicable o marca `[PENDIENTE]`.
 23. Escalas mezcladas sin avisarlo.
 24. Párrafos largos en el panel; vocabulario por encima de la edad.
+25. Números con formato mezclado ("29,5" en el control y "29.5" en el panel) porque el JS usa
+    `toLocaleString('es')`: fija el locale (`'es-MX'`) en todo.
+
+**Encontrados al construir con la plantilla** (ya corregidos en ella; no los reintroduzcas)
+26. **Resaltado que apaga lo que brilla**: poner `emissive = 0` al deseleccionar deja el Sol
+    "medio apagado". Suma sobre el `emissive` original.
+27. **Radio del modelo fijo en el código de cámara**: un modelo de otro tamaño queda cortado
+    o diminuto. El radio lo da `construirModelo`.
+28. **Modelo alargado encuadrado como esfera**: mucho espacio vacío; y al abrir el panel
+    lateral se sale por un lado. Usa `medidas()` y encuadra después de abrir el panel.
+29. **Materiales sin `emissive`** (zonas de toque invisibles) rompen el resaltado si no se omiten.
+30. **Texto encima del modelo en celular** (título o nota de escala sin fondo): contraste
+    ilegible. Nota de escala en el encabezado y franja de fondo tras el título.
+31. **Quiz que no cabe en celular**: 4 opciones + botonera de 3 filas. En preguntas que no se
+    responden tocando, se oculta la botonera y la hoja crece.
+32. **Panel de información tapando el efecto** mientras se mueve un control.
+33. **Partes que no se pueden tocar en la vista inicial** (dentro de otras, detrás): o se
+    ven desde el corte, o se dice en la instrucción que se eligen con su botón.
 
 ## 5. Flujo de trabajo recomendado
 
@@ -216,9 +298,11 @@ Salieron de revisar proyectos educativos reales en Three.js. Revísalos antes de
 ## 6. Verificación antes de entregar
 
 `scripts/verificar.cjs` (Playwright) a 1440×900 con ratón y 375×667 táctil reporta consola,
-peticiones fallidas, desborde horizontal, objetivos táctiles < 44 px, y prueba: cada botón
-abre el panel, un arrastre no lo abre, un tap en el centro selecciona, Escape cierra y el
-quiz llega al resultado. Guarda capturas.
+peticiones fallidas, desborde horizontal, objetivos táctiles < 44 px (también `range`), y
+prueba: cada botón abre el panel, **tocar cada parte en el modelo 3D abre su panel** (con
+`dondeEsta`), un arrastre no lo abre, Escape cierra y el quiz llega al resultado (opción,
+tocar y ajustar). Guarda capturas. No prueba arrastres de objetos ni que el efecto sea
+correcto: eso, a mano o con un script corto (§1.3) y revisando capturas.
 
 ```bash
 python3 -m http.server 8000
@@ -232,15 +316,20 @@ Opciones: `--no3d` (bloquea Three.js para probar el plan B), `--reduced` (movimi
 reducido), `--libs DIR` (sirve `three@x.y.z/<ruta>` desde una copia local cuando el CDN está
 bloqueado: carpeta `package/` de `npm pack three@0.160.0`). Contrato con la página:
 `html.webgl-ok|no-3d`, `#stage`, `[data-objeto]`, `#panel`, `#panel-titulo`,
-`[data-quiz-abrir]`, `#quiz`, `.opcion`, `#quiz-siguiente`, `[data-quiz-resultado]`.
+`[data-quiz-abrir]`, `#quiz`, `.opcion`, `[data-comprobar]`, `#quiz-siguiente`,
+`[data-quiz-resultado]` y, opcional, `window.__experiencia.escena.dondeEsta(id)`.
 
 - [ ] `verificar.cjs` sin ✗ en modo normal, `--no3d` y `--reduced`; **capturas revisadas**.
 - [ ] Cada parte se puede elegir tocando el modelo y con su botón; mismo resultado.
 - [ ] Celular real o emulado en vertical y horizontal; tableta a 768 y 1024 px.
-- [ ] Todos los datos tienen fuente; ningún `[PENDIENTE]` sin listar.
+- [ ] Todos los datos tienen fuente (por parte); ningún `[PENDIENTE]` sin listar; si no
+      pudiste abrir las fuentes, dilo.
+- [ ] Si hay un control: el efecto es correcto en varios valores (revisa capturas en
+      0 %, 25 %, 50 %, 75 %) y funciona con teclado (flechas en el `range`).
 - [ ] Textos revisados contra la edad (§2.4); el quiz mide los conceptos del §0.
 - [ ] Consola limpia; funciona servido desde una subcarpeta (como en GitHub Pages).
 
 **Entrega siempre**: el enlace o cómo correrlo localmente, los conceptos que cubre, las
-fuentes usadas, los `[PENDIENTE]`, y **la lista de decisiones que tomaste por tu cuenta**
-(edad supuesta, conceptos elegidos, escala, número de preguntas, colores, publicación).
+fuentes usadas (y si se comprobaron en línea), los `[PENDIENTE]`, y **la lista de decisiones
+que tomaste por tu cuenta** (edad supuesta, conceptos y partes elegidas, escala y qué se
+exageró, hemisferio, formato de números, número y tipo de preguntas, colores, publicación).

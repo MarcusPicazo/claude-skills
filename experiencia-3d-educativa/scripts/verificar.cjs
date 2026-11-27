@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 /* Verificación automática de una experiencia 3D educativa (§8 de SKILL.md).
    A 1440×900 (ratón) y 375×667 (táctil) reporta: errores/advertencias de consola, excepciones,
-   peticiones fallidas o 4xx/5xx, desborde horizontal, objetivos táctiles < 44 px, si arrancó el
-   3D o el modo sin 3D, y prueba la interacción: cada botón de parte abre el panel, un toque en
-   el centro del modelo selecciona algo, un arrastre NO abre el panel, Escape cierra y el quiz
-   se puede contestar de principio a fin. Guarda capturas: revísalas a ojo.
+   peticiones fallidas o 4xx/5xx, desborde horizontal, objetivos táctiles < 44 px (botones,
+   enlaces y también input range/select), si arrancó el 3D o el modo sin 3D, y prueba la
+   interacción: cada botón de parte abre el panel, tocar cada parte EN EL MODELO abre su panel
+   (con el gancho window.__experiencia.escena.dondeEsta), un arrastre NO abre el panel, Escape
+   cierra y el quiz se contesta de principio a fin (opción, "toca" y "ajusta + Comprobar").
+   Guarda capturas: revísalas a ojo.
 
    Uso:
      node verificar.cjs http://localhost:8000/ [--out capturas] [--libs DIR] [--no3d] [--reduced]
@@ -15,7 +17,8 @@
 
    Contrato con la página (lo cumple la plantilla de assets/):
      html.webgl-ok | html.no-3d · #stage (contiene el canvas) · [data-objeto] botones de cada parte
-     #panel y #panel-titulo · [data-quiz-abrir] · #quiz · .opcion · #quiz-siguiente · [data-quiz-resultado]
+     #panel y #panel-titulo · [data-quiz-abrir] · #quiz · .opcion · [data-comprobar] · #quiz-siguiente
+     [data-quiz-resultado] · opcional: window.__experiencia.escena.dondeEsta(id) → {x, y} | null
 
    Requiere Playwright (`npm i -D playwright && npx playwright install chromium`). */
 const { chromium } = require('playwright');
@@ -157,13 +160,43 @@ const THREE_URL = /three@[\d.]+\/(.+?)(\?.*)?$/;
       await page.waitForTimeout(300);
       if (await visible('#panel')) issues.push('un arrastre para girar abrió el panel (falta distinguir tap de arrastre)');
       await page.keyboard.press('Escape');
-      // Tap en el centro: debería seleccionar algo
       await page.waitForTimeout(600);
-      if (mobile) await page.touchscreen.tap(cx, cy); else await page.mouse.click(cx, cy);
-      await page.waitForTimeout(reduced ? 150 : 1000);
-      if (await visible('#panel')) { notes.push(`tap en el centro → ${(await page.locator('#panel-titulo').textContent()).trim()}`); await shot('03-tap-modelo'); }
-      else notes.push('tap en el centro del canvas no seleccionó nada (¿el modelo está centrado?)');
-      await page.keyboard.press('Escape');
+      const conGancho = await page.evaluate(() => !!window.__experiencia?.escena?.dondeEsta);
+      if (conGancho) {
+        // Toca cada parte en el modelo 3D (posición calculada por la propia escena) y comprueba el panel.
+        const ids = await chips.evaluateAll((els) => els.map((e) => [e.dataset.objeto, e.textContent.trim()]));
+        const ok = [], ocultas = [];
+        for (const [id, nombre] of ids) {
+          // Espera a que la cámara termine de moverse (transición del toque anterior) antes de medir.
+          const donde = (i) => page.evaluate((x) => window.__experiencia.escena.dondeEsta(x), i);
+          let q = await donde(id);
+          for (let k = 0; k < 15; k++) {
+            await page.waitForTimeout(200);
+            const q2 = await donde(id);
+            const quieto = (!q && !q2) || (q && q2 && Math.hypot(q.x - q2.x, q.y - q2.y) < 1);
+            q = q2;
+            if (quieto) break;
+          }
+          if (!q) { ocultas.push(nombre); continue; }
+          if (mobile) await page.touchscreen.tap(q.x, q.y); else await page.mouse.click(q.x, q.y);
+          await page.waitForTimeout(reduced ? 150 : 1000);
+          const titulo = (await page.locator('#panel-titulo').textContent().catch(() => '') || '').trim();
+          if (!(await visible('#panel')) || titulo !== nombre) issues.push(`tocar «${nombre}» en el modelo abrió «${titulo || 'nada'}»`);
+          else ok.push(nombre);
+          if (ok.length === 1) await shot('03-tap-modelo');
+          await page.keyboard.press('Escape');
+          await page.waitForTimeout(150);
+        }
+        notes.push(`toques en el modelo 3D: ${ok.length}/${ids.length} correctos`);
+        if (ocultas.length) notes.push(`sin zona firme para el dedo en la vista inicial (ocultas o muy pequeñas: agrega zona de toque o dilo en la instrucción): ${ocultas.join(', ')}`);
+      } else {
+        // Sin gancho: un toque en el centro debería seleccionar algo
+        if (mobile) await page.touchscreen.tap(cx, cy); else await page.mouse.click(cx, cy);
+        await page.waitForTimeout(reduced ? 150 : 1000);
+        if (await visible('#panel')) { notes.push(`tap en el centro → ${(await page.locator('#panel-titulo').textContent()).trim()}`); await shot('03-tap-modelo'); }
+        else notes.push('tap en el centro no seleccionó nada; expón window.__experiencia.escena.dondeEsta para probar cada parte');
+        await page.keyboard.press('Escape');
+      }
     }
 
     // 4. Quiz de principio a fin
@@ -177,7 +210,9 @@ const THREE_URL = /three@[\d.]+\/(.+?)(\?.*)?$/;
       while (pasos++ < 25) {
         if (await page.locator('[data-quiz-resultado]').count()) { terminado = true; break; }
         const op = page.locator('#quiz .opcion:not([disabled])');
+        const comprobar = page.locator('#quiz [data-comprobar]:not([disabled])');
         if (await op.count()) await press(op.first());
+        else if (await comprobar.count()) await press(comprobar.first()); // pregunta de "ajusta y comprueba"
         else await press(chips.first());           // pregunta de "toca en el modelo"
         await page.waitForTimeout(150);
         const sig = page.locator('#quiz-siguiente');

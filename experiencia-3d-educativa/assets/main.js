@@ -3,7 +3,13 @@
    Si Three.js o WebGL fallan, 1 y 2 siguen funcionando (ver SKILL.md §5).
 
    PARA ADAPTAR A OTRO TEMA: cambia solo CONTENIDO y la función construirModelo().
-   Cada objeto clicable lleva userData.id igual al id de su entrada en CONTENIDO.partes. */
+   Cada objeto clicable lleva userData.id igual al id de su entrada en CONTENIDO.partes.
+   Contrato de construirModelo (ver SKILL.md §1.1): devuelve
+     { grupo, clicables, radio }                       obligatorio
+     acercamiento: { id: factor }                       opcional (1 = vista completa)
+     medidas(aspect) → { ancho, alto }                  opcional: modelos alargados (encuadre de caja)
+     orientar(vista, aspect)                            opcional: gira el grupo según la vista/pantalla
+     y lo que el tema necesite (p. ej. moverLuna) para que lo use la UI. */
 
 // ============================================================================
 // 1. CONTENIDO — todos los textos y datos en un solo lugar
@@ -18,6 +24,7 @@ const CONTENIDO = {
       color: '#8d6e4f',
       resumen: 'Es la capa sólida y delgada donde vivimos. Bajo los océanos es más fina que bajo los continentes.',
       datos: [['Grosor', '5 a 70 km'], ['Estado', 'Sólido']],
+      // fuente: 'Fuente: … (por parte; si falta se usa CONTENIDO.fuente)',
     },
     {
       id: 'manto',
@@ -71,6 +78,8 @@ const CONTENIDO = {
     correcto: 'Correcto.',
     incorrecto: 'Casi.',
     tocaPista: 'Toca el modelo o usa los botones de abajo.',
+    ajustarPista: 'Mueve el control (o el modelo) y luego toca «Comprobar».',
+    comprobar: 'Comprobar',
     tocaPistaSin3D: 'Elige la respuesta con los botones de abajo.',
     siguiente: 'Siguiente',
     verResultado: 'Ver resultado',
@@ -131,8 +140,8 @@ function elegir(id, { desdeBoton = false } = {}) {
   estado.seleccion = id;
   marcarChips(id);
   escena?.seleccionar(id);
-  escena?.enfocar(id);
   mostrarPanel(id, desdeBoton);
+  escena?.enfocar(id); // después de abrir el panel: encuadra en el hueco que queda libre
 }
 
 function marcarChips(id) {
@@ -151,7 +160,7 @@ function mostrarPanel(id, moverFoco) {
     const dd = document.createElement('dd'); dd.textContent = v;
     return [dt, dd];
   }));
-  $('#panel-fuente').textContent = CONTENIDO.fuente;
+  $('#panel-fuente').textContent = p.fuente ?? CONTENIDO.fuente;
   panel.hidden = false;
   escena?.reencuadrar();
   if (moverFoco) $('#panel-titulo').focus({ preventScroll: true });
@@ -161,6 +170,7 @@ function cerrarTodo() {
   panel.hidden = true;
   quiz.hidden = true;
   estado.modo = 'explorar';
+  document.body.dataset.modo = 'explorar';
   estado.seleccion = null;
   marcarChips(null);
   escena?.seleccionar(null);
@@ -185,6 +195,7 @@ function pintarPregunta() {
   const t = CONTENIDO.textos;
   const q = CONTENIDO.quiz[estado.quizIndex];
   estado.respondida = false;
+  document.body.dataset.modo = `quiz-${q.tipo}`; // el CSS reorganiza la pantalla en celular
   $('#quiz-progreso').textContent = t.pregunta(estado.quizIndex + 1, CONTENIDO.quiz.length);
   $('#quiz-titulo').textContent = q.pregunta;
   $('#quiz-feedback').replaceChildren();
@@ -203,6 +214,24 @@ function pintarPregunta() {
       b.addEventListener('click', () => responderOpcion(i));
       cont.appendChild(b);
     });
+  } else if (q.tipo === 'ajustar') {
+    // Se responde moviendo un control o el modelo; q.comprobar() dice si quedó bien.
+    const p = document.createElement('p');
+    p.className = 'tocar-pista';
+    p.textContent = q.pista ?? t.ajustarPista;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn';
+    b.dataset.comprobar = '';
+    b.textContent = t.comprobar;
+    b.addEventListener('click', () => {
+      if (estado.respondida) return;
+      b.disabled = true;
+      const bien = q.comprobar();
+      q.alFallar && !bien && q.alFallar();         // p. ej. mostrar la posición correcta
+      cerrarPregunta(bien, q.explicacion);
+    });
+    cont.append(p, b);
   } else {
     const p = document.createElement('p');
     p.className = 'tocar-pista';
@@ -261,6 +290,7 @@ function siguientePregunta() {
     return;
   }
   // Resultado final
+  document.body.dataset.modo = 'quiz-fin';
   quiz.classList.remove('modo-tocar');
   $('#quiz-progreso').textContent = '';
   $('#quiz-titulo').textContent = t.quizTitulo;
@@ -334,7 +364,8 @@ async function init3D() {
   controls.maxDistance = 7;
   controls.rotateSpeed = tactil ? 0.7 : 1;
 
-  const { grupo, clicables, orientarCorteHacia, acercamiento } = construirModelo(THREE, { segmentos: tactil ? 48 : 64 });
+  const modelo = construirModelo(THREE, { segmentos: tactil ? 48 : 64 });
+  const { grupo, clicables, radio: radioModelo = 1, medidas, orientar, acercamiento = {} } = modelo;
   scene.add(grupo);
 
   // --- Zona libre: el hueco que no tapan encabezado, botonera ni panel ---
@@ -354,12 +385,16 @@ async function init3D() {
     return { W, H, cx: right / 2, cy: (top + bottom) / 2, w: right, h: bottom - top };
   };
 
-  const distanciaBase = () => {
-    const z = zonaLibre(false);
-    const radio = 1.08; // radio del modelo + margen
+  const distanciaBase = (conPanel = false) => {
+    const z = zonaLibre(conPanel);
     const t = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
     const tv = t * (z.h / z.H);                           // fov vertical efectivo de la zona libre
     const th = t * (z.W / z.H) * (z.w / z.W);             // fov horizontal efectivo
+    if (medidas) {                                        // modelo alargado: encuadre de caja
+      const m = medidas(z.W / z.H);                       // semiancho y semialto en pantalla
+      return Math.max(m.ancho / th, m.alto / tv) * 1.08 + (m.fondo ?? 0);
+    }
+    const radio = radioModelo * 1.05;                     // modelo redondo: esfera envolvente + margen
     return radio / Math.sin(Math.atan(Math.min(tv, th)));
   };
 
@@ -376,7 +411,7 @@ async function init3D() {
 
   // Vista inicial: en diagonal y desde arriba, mirando al octante abierto.
   const VISTA = new THREE.Vector3(1, 0.75, 1).normalize();
-  grupo.rotation.y = orientarCorteHacia(VISTA);
+  orientar?.(VISTA, stage.clientWidth / stage.clientHeight);
   camera.position.copy(VISTA).multiplyScalar(distanciaBase());
   controls.maxDistance = Math.max(7, distanciaBase() * 1.6);
   reencuadrar();
@@ -394,7 +429,9 @@ async function init3D() {
       const base = m.userData.colorBase;
       const activo = id === seleccionId;
       const hover = id === hoverId;
-      m.material.emissive.copy(base).multiplyScalar(activo ? 0.4 : hover ? 0.2 : 0);
+      if (!m.material.emissive) return; // zonas de toque invisibles (MeshBasicMaterial)
+      m.userData.emisivoBase ??= m.material.emissive.clone(); // respeta lo que ya brilla (estrellas, lámparas)
+      m.material.emissive.copy(base).multiplyScalar(activo ? 0.4 : hover ? 0.2 : 0).add(m.userData.emisivoBase);
       // Oscurecer en vez de volver transparente: sin errores de orden de dibujo en capas anidadas.
       m.material.color.copy(base).multiplyScalar(seleccionId && !activo ? 0.45 : 1);
     });
@@ -452,9 +489,36 @@ async function init3D() {
   escena = {
     reencuadrar,
     seleccionar(id) { seleccionId = id; pintarEstados(); },
+    /** Punto de pantalla donde un toque cae sobre la parte `id` (o null). Lo usa verificar.cjs. */
+    dondeEsta(id) {
+      const r = renderer.domElement.getBoundingClientRect();
+      const v = new THREE.Vector3();
+      const t = new THREE.Matrix4();
+      for (const m of clicables) {
+        if (m.userData.id !== id || !m.visible) continue;
+        const pts = [];
+        if (m.isInstancedMesh) {
+          for (let i = 0; i < Math.min(m.count, 30); i++) { m.getMatrixAt(i, t); pts.push(new THREE.Vector3().setFromMatrixPosition(t).applyMatrix4(m.matrixWorld)); }
+        } else {
+          // Centro + algunos vértices: en formas huecas (anillos, tubos) el centro está vacío.
+          m.geometry.computeBoundingSphere();
+          pts.push(m.localToWorld(m.geometry.boundingSphere.center.clone()));
+          const pos = m.geometry.attributes.position;
+          for (let i = 0; i < pos.count; i += Math.max(1, Math.floor(pos.count / 24))) pts.push(m.localToWorld(new THREE.Vector3().fromBufferAttribute(pos, i)));
+        }
+        for (const p of pts) {
+          v.copy(p).project(camera);
+          const x = r.left + (v.x + 1) / 2 * r.width, y = r.top + (1 - v.y) / 2 * r.height;
+          // Solo puntos firmes: el punto y sus vecinos a ±3 px caen en la misma parte (no en un borde).
+          const firme = [[0, 0], [3, 0], [-3, 0], [0, 3], [0, -3]].every(([dx, dy]) => idBajo(x + dx, y + dy) === id);
+          if (v.z < 1 && x > r.left + 3 && x < r.right - 3 && y > r.top + 3 && y < r.bottom - 3 && firme) return { x, y };
+        }
+      }
+      return null;
+    },
     enfocar(id) {
       // Vuelve a la vista del corte y se acerca más a las partes pequeñas.
-      moverCamara(VISTA.clone().multiplyScalar(distanciaBase() * (acercamiento[id] ?? 1)));
+      moverCamara(VISTA.clone().multiplyScalar(distanciaBase(true) * (acercamiento[id] ?? 1)));
     },
   };
   pintarEstados();
@@ -465,6 +529,7 @@ async function init3D() {
     if (!w || !h) return;
     camera.aspect = w / h;
     renderer.setSize(w, h);
+    orientar?.(VISTA, w / h);
     reencuadrar();
     desfase.x = desfase.tx; desfase.y = desfase.ty;
     aplicarDesfase(); // también actualiza la proyección
@@ -495,6 +560,7 @@ async function init3D() {
   controls.addEventListener('start', () => { anim = null; }); // el usuario manda sobre la animación
   arrancar();
 
+  window.__experiencia = { escena }; // gancho de pruebas: verificar.cjs toca cada parte en 3D
   document.documentElement.classList.add('webgl-ok');
 }
 
@@ -541,12 +607,12 @@ function construirModelo(THREE, { segmentos }) {
     });
   });
 
-  // La bisectriz del hueco en coordenadas locales es (-1, 0, -1). Devuelve el giro en Y
-  // que la apunta hacia `vista` (vector desde el centro hacia la cámara).
-  const orientarCorteHacia = (vista) => Math.atan2(vista.x, vista.z) - Math.atan2(-1, -1);
+  // La bisectriz del hueco en coordenadas locales es (-1, 0, -1): se gira el grupo en Y
+  // para apuntarla hacia `vista` (vector desde el centro hacia la cámara).
+  const orientar = (vista) => { grupo.rotation.y = Math.atan2(vista.x, vista.z) - Math.atan2(-1, -1); };
   // Cuánto acercar la cámara al elegir cada parte (1 = vista completa).
   const acercamiento = { corteza: 1, manto: 0.92, 'nucleo-externo': 0.8, 'nucleo-interno': 0.7 };
-  return { grupo, clicables, orientarCorteHacia, acercamiento };
+  return { grupo, clicables, radio: 1, orientar, acercamiento };
 }
 
 // ============================================================================

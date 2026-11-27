@@ -11,6 +11,11 @@
 8. Pantalla de inicio (opcional)
 9. Cambio de idioma (opcional)
 10. Controles extra: sliders, paradas, botones de escala
+11. Un solo punto de cambio para un valor (causa → efecto)
+12. Arrastrar un objeto a lo largo de su trayectoria
+13. Vista 2D del efecto ("así se ve desde…")
+14. Pregunta de quiz "ajustar"
+15. Celular: espacio vertical en modo quiz
 
 ---
 
@@ -109,7 +114,7 @@ escena). Estructura en `CONTENIDO.quiz`:
 { tipo: 'tocar',  pregunta, correcta: 'id-de-parte', explicacion }
 ```
 
-Flujo: pregunta → respuesta → bloqueo de opciones → feedback (✓/✗ + explicación, en
+Tipos: `opcion`, `tocar` y `ajustar` (§14). Flujo: pregunta → respuesta → bloqueo de opciones → feedback (✓/✗ + explicación, en
 `aria-live="polite"`) → "Siguiente" → al final "Respondiste bien X de N" + "Repetir".
 
 - En `tocar`, `elegir(id)` responde en vez de abrir el panel; tras responder se resalta la
@@ -146,3 +151,79 @@ externos se rompen). Actualiza `<html lang>` y guarda la elección en `localStor
 - **Paradas** (anterior/siguiente o `<select>`): para recorridos de escala o procesos.
 - **Botón de escala** "Ver a escala real": enseña por qué el modelo por defecto exagera.
 - Botones de zoom +/−: prueba los dos sentidos y los límites (`Math.min`/`Math.max` correctos).
+
+## 11. Un solo punto de cambio para un valor
+
+Igual que `elegir(id)` para las partes, un valor continuo (posición de un astro, ángulo,
+temperatura) cambia solo por una función:
+
+```js
+function ponerValor(v, { desdeControl = false } = {}) {
+  valor = normalizar(v);
+  if (!desdeControl) control.value = String(aUnidadesDelControl(valor)); // no pelear con el dedo
+  control.setAttribute('aria-valuetext', textoDelEstado(valor));        // "Día 7: Cuarto creciente"
+  dibujarEfecto2D(valor);                                               // funciona sin 3D
+  escena?.aplicarValor(valor);                                          // 3D si existe
+}
+```
+
+- El control usa **unidades que enseñan** (días del ciclo, °C, años), no grados internos.
+- `step` fino (0.25 días) para que el teclado avance poco a poco; las flechas funcionan solas.
+- Al mover el control en modo explorar, cierra el panel de información (en celular lo tapa todo).
+- Estado inicial en un valor interesante (no en el caso trivial: Luna creciente, no Luna nueva).
+
+## 12. Arrastrar un objeto a lo largo de su trayectoria
+
+OrbitControls usa el mismo gesto. Decide **antes** que él quién se queda el arrastre:
+
+```js
+const plano = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);  // plano de la órbita
+stage.addEventListener('pointerdown', (e) => {                   // captura en el contenedor:
+  if (idBajo(e.clientX, e.clientY) !== 'luna') return;          // corre antes que OrbitControls
+  arrastrando = true; controls.enabled = false;
+}, true);
+addEventListener('pointermove', (e) => {
+  if (!arrastrando) return;
+  idBajo(e.clientX, e.clientY);                                  // actualiza el rayo
+  if (!raycaster.ray.intersectPlane(plano, punto)) return;
+  grupo.worldToLocal(punto).sub(centroDeLaOrbita);               // respeta giros del grupo
+  ponerValor(THREE.MathUtils.radToDeg(Math.atan2(punto.z, -punto.x)));
+});
+addEventListener('pointerup', () => { arrastrando = false; controls.enabled = true; });
+```
+
+- El objeto arrastrable necesita zona de toque generosa (radio ≥ 2× el visible).
+- El tap sin movimiento sigue abriendo su panel (la regla tap vs. arrastre de §2 lo resuelve).
+- Una línea guía (órbita, riel) visible y una línea "de mirada" ayudan a entender qué se mueve.
+
+## 13. Vista 2D del efecto
+
+Cuando lo que se aprende es **cómo se ve algo desde un punto** (la fase desde la Tierra, la
+sombra desde el suelo), dibújalo en un `<canvas>` 2D pequeño en el encabezado:
+- Cálculo geométrico real, no imágenes por tramos. Ej. fase lunar: fracción iluminada
+  `(1 − cos α) / 2`; terminador = elipse de semieje `r·|cos α|`; creciente iluminada a la
+  derecha en el hemisferio norte (espejo para menguante).
+- Nombre del estado en `aria-live="polite"` + un dato concreto ("vemos iluminada: 75 %").
+- Es el **plan B que enseña**: sin WebGL, control + vista 2D siguen mostrando el concepto.
+- Mide el canvas con `clientWidth × devicePixelRatio` (máx. 2) para que no se vea borroso.
+
+## 14. Pregunta "ajustar"
+
+```js
+{ tipo: 'ajustar', pregunta: 'Mueve la Luna hasta que se vea llena.',
+  comprobar: () => distanciaAngular(valor, 180) <= 15,   // tolerancia generosa para niños
+  alFallar: () => ponerValor(180),                         // muestra la respuesta
+  explicacion: 'Se ve llena cuando está del lado contrario al Sol.' }
+```
+
+La plantilla pinta la pista y un botón **Comprobar** (`[data-comprobar]`, lo usa el
+verificador). Tolerancias: ±15° o equivalente en primaria, ±8° en secundaria. Si falla, di
+dónde la dejó ("La dejaste en Gibosa creciente") antes de la explicación.
+
+## 15. Celular: espacio vertical en modo quiz
+
+A 375×667 caben a la vez: encabezado (~100 px), modelo (≥ 200 px), hoja (~300 px) y
+botonera. No cabe todo eso más una pregunta de 4 opciones. La plantilla pone
+`body[data-modo="quiz-<tipo>"]` y el CSS oculta la botonera de partes en preguntas que no se
+responden tocando partes, oculta "Pon a prueba" durante el quiz y da más alto a la hoja.
+Si agregas controles (un `range`), cuéntalos en ese presupuesto.

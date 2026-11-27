@@ -29,6 +29,8 @@
   <header class="topbar">
     <h1 id="titulo">Las capas de la Tierra</h1>
     <p class="instruccion" id="instruccion">Toca una capa para conocerla. Arrastra para girar.</p>
+    <!-- Nota de escala/simplificación: en el encabezado, nunca encima del modelo. -->
+    <p class="nota-escala" id="nota-escala"></p>
   </header>
 
   <main>
@@ -41,8 +43,6 @@
     <div class="fallback" id="fallback" hidden>
       <p><strong>El modelo 3D no se pudo cargar.</strong> Puedes seguir explorando con los botones de abajo y hacer el quiz.</p>
     </div>
-
-    <p class="nota-escala" id="nota-escala"></p>
 
     <!-- Panel de información (una sola instancia, se rellena desde CONTENIDO en main.js). -->
     <section class="sheet" id="panel" aria-labelledby="panel-titulo" hidden>
