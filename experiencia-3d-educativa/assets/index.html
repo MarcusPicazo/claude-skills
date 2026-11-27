@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Cambia título y descripción por el tema real (≤ 60 y ≤ 155 caracteres). -->
+  <title>Las capas de la Tierra · Explorador 3D</title>
+  <meta name="description" content="Explora en 3D las capas internas de la Tierra: toca cada capa para conocerla y pon a prueba lo que aprendiste.">
+  <meta name="theme-color" content="#0f1b2d">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23e0a458'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Three.js como módulo ES con versión fija. Para no depender del CDN, copia la misma
+       versión a vendor/three/ y cambia estas dos rutas (ver references/threejs-escena-base.md §1). -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script>document.documentElement.classList.add('js');</script>
+  <script type="module" src="main.js"></script>
+</head>
+<body>
+  <a class="skip" href="#objetos">Saltar a la lista de partes</a>
+
+  <header class="topbar">
+    <h1 id="titulo">Las capas de la Tierra</h1>
+    <p class="instruccion" id="instruccion">Toca una capa para conocerla. Arrastra para girar.</p>
+  </header>
+
+  <main>
+    <!-- Escenario 3D: decorativo para lectores de pantalla; la lista de botones es la alternativa. -->
+    <div class="stage" id="stage" aria-hidden="true">
+      <div class="tooltip" id="tooltip" hidden></div>
+    </div>
+
+    <!-- Se muestra si no hay WebGL o si Three.js no cargó: lo demás sigue funcionando. -->
+    <div class="fallback" id="fallback" hidden>
+      <p><strong>El modelo 3D no se pudo cargar.</strong> Puedes seguir explorando con los botones de abajo y hacer el quiz.</p>
+    </div>
+
+    <p class="nota-escala" id="nota-escala"></p>
+
+    <!-- Panel de información (una sola instancia, se rellena desde CONTENIDO en main.js). -->
+    <section class="sheet" id="panel" aria-labelledby="panel-titulo" hidden>
+      <button class="cerrar" type="button" data-cerrar aria-label="Cerrar panel">×</button>
+      <h2 id="panel-titulo" tabindex="-1"></h2>
+      <p class="resumen" id="panel-resumen"></p>
+      <dl class="datos" id="panel-datos"></dl>
+      <p class="fuente" id="panel-fuente"></p>
+    </section>
+
+    <!-- Mini quiz. No es modal: las preguntas de "toca en el modelo" usan la escena. -->
+    <section class="sheet quiz" id="quiz" aria-labelledby="quiz-titulo" hidden>
+      <button class="cerrar" type="button" data-cerrar aria-label="Cerrar quiz">×</button>
+      <p class="progreso" id="quiz-progreso"></p>
+      <h2 id="quiz-titulo" tabindex="-1"></h2>
+      <div class="opciones" id="quiz-opciones"></div>
+      <p class="feedback" id="quiz-feedback" aria-live="polite"></p>
+      <button class="btn" type="button" id="quiz-siguiente" hidden>Siguiente</button>
+    </section>
+
+    <!-- Alternativa accesible y de celular: cada parte del modelo es un botón real. -->
+    <nav class="chips" id="objetos" aria-label="Partes del modelo">
+      <div class="chips-lista" id="chips-lista"></div>
+      <button class="btn btn-quiz" type="button" data-quiz-abrir>Pon a prueba lo aprendido</button>
+    </nav>
+  </main>
+
+  <noscript><p class="noscript">Esta actividad necesita JavaScript activado.</p></noscript>
+</body>
+</html>
