@@ -13,6 +13,30 @@ estilos con la misma base técnica. Plantillas sin build en `assets/`, detalle e
 No empieces a construir sin estas respuestas. Hazlas en un solo mensaje, cortas, y ofrece
 valores por defecto para que el usuario pueda contestar "lo que recomiendes".
 
+**Si el pedido ya trae lo esencial** (estilo o tipo de negocio, secciones, idioma y qué
+material hay), no frenes el trabajo para preguntar lo demás: usa los valores por defecto de
+abajo y **enlista al final cada decisión que tomaste** para que el usuario las corrija.
+
+| Falta | Valor por defecto |
+|---|---|
+| Paleta | Producto: fondo oscuro + 1 acento saturado + 1 secundario. Recorrido: fondo claro natural + texto grafito + 1 acento cálido. Comprueba AA (texto ≥ 4.5:1; texto del botón sobre el acento también). |
+| Tipografía | Producto: Inter. Recorrido: Fraunces (titulares) + Manrope (texto). |
+| Destino técnico | HTML estático con las plantillas de `assets/`. |
+| Backend del formulario | Modo demo (`data-endpoint=""`): valida y muestra éxito sin enviar; se declara en la entrega. |
+| Dirección, horarios, precios, regiones, cifras | `[PENDIENTE: …]` visible en el texto, nunca inventados. |
+| Enlace de mapa sin dirección | Búsqueda de la ciudad en Google Maps + `[PENDIENTE: dirección]` en el botón. |
+| Imágenes | `scripts/placeholders.py` (genera webp + jpg a 1920 y 960 px). |
+
+### Proyecto ficticio o demo
+
+Cuando el usuario dice que el negocio es ficticio o pide contenido "de ejemplo":
+- `<meta name="robots" content="noindex">` y en el pie "Proyecto ficticio de demostración".
+- **Testimonios de ejemplo**: solo si los pide explícitamente. Cada tarjeta lleva una
+  etiqueta visible "Ejemplo" (`.tag`), hay una nota bajo el título ("Testimonios de ejemplo
+  para mostrar el diseño. No son personas reales.") y el autor es genérico ("Estudiante de
+  ejemplo · Ingeniería"), nunca un nombre propio inventado. Sin fotos de personas.
+- Aun así, nada de cifras, premios, logos de clientes ni datos de contacto inventados.
+
 1. **Estilo** (recomienda uno según su caso, ver tabla abajo):
    - **Producto / startup** — app, SaaS, hardware, lanzamiento, lista de espera.
    - **Recorrido cinematográfico** — un lugar o una cosa física que "se recorre": desarrollo
@@ -50,6 +74,23 @@ Para arrancar, copia la plantilla del estilo (`assets/estilo-producto/` o
 `assets/estilo-recorrido/`) y reemplaza los placeholders. Funcionan abriendo `index.html`
 con cualquier servidor estático (`python3 -m http.server`). No abras con `file://` si hay
 video: algunos navegadores no permiten `fetch` ni seek fiable desde disco.
+
+Qué trae cada plantilla (adapta, no tienes que usar todo):
+- **Producto**: hero, bento "qué es", manifiesto fijado (`.statement`, puede ir dentro de
+  otra sección: se busca por clase), filas de funciones, testimonios (`[data-flip-row]`,
+  giro 3D), lista de espera con formulario (validación, `aria-live`, modo demo o
+  `data-endpoint`), pie. Para "problema" usa el manifiesto + dos columnas que convergen
+  (`gsap-lenis-setup.md` §5).
+- **Recorrido**: 4 paradas (la última fijada con secuencia por bandas `[data-pin-step]`),
+  lema, detalles, FAQ, contacto. Para cambiar el número de paradas sigue el comentario
+  "PARA CAMBIAR EL NÚMERO DE PARADAS" del `index.html` (4 lugares que deben sumar N).
+
+Herramientas en `scripts/`:
+- `placeholders.py <carpeta> "Nombre 1" "Nombre 2" …` — fotogramas de placeholder 16:9 con
+  el sujeto a la derecha (lado opuesto al texto), en webp + jpg, 1920 y 960 px.
+- `verificar.cjs <url> [--libs DIR] [--reduced] [--nojs]` — Playwright: baja y sube a 1440 y
+  375 px, reporta consola, peticiones fallidas, desborde horizontal y si llegó/regresó, y
+  guarda capturas. **Revisa las capturas**: el script no ve problemas de diseño.
 
 Antes de tareas grandes da un plan corto. Al terminar cada paso, di cómo verificarlo.
 
@@ -100,6 +141,11 @@ if (!reduceMotion) {
   IntersectionObserver siguen funcionando. No uses wrappers con `transform`.
 - Con `prefers-reduced-motion` no se crea Lenis: scroll nativo.
 - CSS obligatorio de Lenis (`html.lenis { height:auto }`, etc.) — está en las plantillas.
+- **Lo que no es animación no depende de GSAP**: menú móvil, formularios, año del pie y
+  acordeones se inicializan *antes* de comprobar si cargaron las librerías. Si el CDN falla,
+  la página debe seguir siendo usable, no solo legible.
+- Si el CDN está bloqueado (sandbox, red corporativa) o quieres no depender de él en
+  producción: copia las librerías a `vendor/` (ver `references/gsap-lenis-setup.md` §1).
 - Si algo cambia la altura de la página (idioma, acordeón, imágenes que cargan sin
   dimensiones): `lenis.resize(); ScrollTrigger.refresh();`.
 
@@ -156,8 +202,9 @@ Si la página tiene muchas animaciones scrubeadas pesadas entre secciones, suspe
 - Unidades: `100dvh`/`100lvh` para escenarios a pantalla completa (la barra de Safari
   cambia `100vh`). `lvh` para el escenario fijo (no salta al ocultarse la barra), `dvh`
   para contenido que debe caber.
-- `overflow-x: clip` o `overscroll-behavior-x: none` en `body`, **nunca** `overflow-x:
-  hidden` en `html` (rompe `position: sticky`).
+- Desborde horizontal: `main { overflow-x: clip }` (ya en las plantillas) + `overscroll-
+  behavior-x: none` en `body`. **Nunca** `overflow-x: hidden` en `html` ni en un ancestro
+  de un sticky (crea contenedor de scroll y rompe `position: sticky`; `clip` no lo hace).
 
 ### 1.6 Accesibilidad
 
@@ -252,8 +299,14 @@ Cada uno se encontró en producción. Revísalos antes de entregar.
     que soporte Range o carga el clip como blob (`fetch` → `URL.createObjectURL`).
 
 **Layout y CSS**
-22. **`overflow-x: hidden` en `html`** rompe `position: sticky`. Pon el control de
-    desborde en `body` (`overflow-x: clip` u `overscroll-behavior-x: none`).
+22. **`overflow-x: hidden` en `html`** rompe `position: sticky`. Y `overflow-x: clip` solo en
+    `body` **no basta**: el overflow de `body` se propaga al viewport, `scrollWidth` sigue
+    creciendo y en iOS se puede arrastrar de lado. Usa `main { overflow-x: clip }`.
+22b. **Animaciones que se salen del ancho en móvil**: el hero con `scale: 1.5`, columnas
+    con `x: ±60` (o incluso ±30: una tarjeta a todo el ancho con 20 px de margen se sale
+    10 px), giros 3D, espirales. Se probó: ninguna de las plantillas originales lo
+    recortaba. El `main { overflow-x: clip }` lo resuelve; compruébalo con
+    `scripts/verificar.cjs` a 375 px, no a ojo.
 23. **`100vh` en móvil**: cambia con la barra de Safari. Usa `dvh`/`lvh`/`svh`.
 24. **Safari iOS < 18 sin `-webkit-backdrop-filter`**: algunos generadores de CSS no lo
     prefijan; agrégalo a mano.
@@ -263,8 +316,16 @@ Cada uno se encontró en producción. Revísalos antes de entregar.
     viejo → nuevo y luego `clearProps`.
 27. **Dobles toques en celular** (idioma, menú): candado mientras dura la transición.
 
+**Carga y JS**
+27b. **`return` al inicio de `main.js` si no hay GSAP**: deja muerto el menú móvil y el
+    formulario cuando el CDN falla. Separa lo funcional de lo animado (las plantillas ya lo hacen).
+27c. **Ids fijos en el JS de la plantilla** (`#manifiesto`, `#pin-ctas`): si mueves o
+    agregas bloques, se rompen en silencio. Las plantillas usan clases y atributos
+    (`.statement`, `[data-pin-step]`, `[data-flip-row]`); sigue ese patrón en lo que agregues.
+
 **Contenido**
-28. Inventar cifras, testimonios, logos de clientes o premios. Marca `[PENDIENTE]`.
+28. Inventar cifras, testimonios, logos de clientes o premios. Marca `[PENDIENTE]`. Si el
+    usuario pide testimonios de ejemplo, ver §0 "Proyecto ficticio o demo".
 29. Texto ilegible sobre la foto: siempre velo degradado + comprobar contraste en el
     fotograma más claro del video, no solo en el primero.
 30. Botones muertos (`href="#"`) al entregar: lista explícita de enlaces pendientes.
@@ -278,7 +339,8 @@ Cada uno se encontró en producción. Revísalos antes de entregar.
 4. Conectar Lenis + ScrollTrigger y animar de arriba abajo, una sección a la vez.
 5. Medios: optimizar (ver `references/rendimiento-movil.md`), cargar por cercanía, modo fijo.
 6. Accesibilidad, SEO, idioma.
-7. Verificar (abajo) y entregar con la lista de pendientes.
+7. Verificar (abajo) con `scripts/verificar.cjs` en modo normal, `--reduced` y `--nojs`,
+   revisar las capturas y entregar con la lista de pendientes y de decisiones tomadas.
 
 ## 4. Verificación antes de entregar
 
@@ -292,6 +354,9 @@ Cada uno se encontró en producción. Revísalos antes de entregar.
 - [ ] Lighthouse móvil: LCP < 2.5 s, CLS < 0.1; contraste AA.
 - [ ] Ningún botón muerto, ningún texto de ejemplo, ninguna cifra inventada.
 - [ ] Consola sin errores ni advertencias de ScrollTrigger.
+- [ ] `node scripts/verificar.cjs <url>` sin ✗ (y con `--reduced`, `--nojs`); capturas revisadas.
+- [ ] Sin GSAP (CDN bloqueado): menú móvil y formulario siguen funcionando.
 
 Entrega siempre: cómo correrlo localmente, qué archivos de medios faltan (nombre, medida,
-peso objetivo) y qué enlaces o textos quedan pendientes.
+peso objetivo), qué enlaces o textos quedan pendientes y qué decidiste por tu cuenta
+(paleta, fuentes, backend del formulario, estructura).

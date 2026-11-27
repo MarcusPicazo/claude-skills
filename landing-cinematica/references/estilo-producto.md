@@ -48,6 +48,16 @@ que son "el show". Plantilla: `assets/estilo-producto/`.
 Regla: máximo 2–3 secciones fijadas largas. Entre ellas, secciones cortas de contenido
 para que el ritmo respire.
 
+Si te piden secciones que no están en la tabla, combina piezas de la plantilla:
+- **Problema sin datos reales**: manifiesto fijado con la frase del dolor + dos tarjetas
+  "Hoy / Con [producto]" que convergen. Sin porcentajes inventados.
+- **Cómo funciona**: las filas numeradas (`.rows`) con 3 pasos.
+- **Funciones**: bento con una tarjeta protagonista (puede llevar un mini mockup en HTML,
+  p. ej. una lista de 3 pendientes, en vez de una captura que no existe).
+- **Testimonios**: `.quotes` con `[data-flip-row]`; reales o, en demo, marcados como
+  ejemplo (SKILL.md §0).
+- **Lista de espera**: la tarjeta `.waitlist` con el formulario de la plantilla.
+
 ## 3. Fondo vivo
 
 **Opción A — WebGL (shader de ruido)**, un solo quad a pantalla completa, fijo detrás de
@@ -147,8 +157,14 @@ entre `top 95%` y `top 20%`. Excluye los fijados y el hero.
 
 - Un CTA principal repetido (hero, mitad, final) con el mismo texto.
 - Lista de espera: formulario mínimo (correo + 1 campo opcional), estado de éxito en la
-  misma tarjeta, sin recargar. Si no hay backend, explícitalo y usa un servicio (Formspree,
-  Netlify Forms) o `mailto:` — pregúntale al usuario.
+  misma tarjeta, sin recargar. Ya está en la plantilla (`#waitlist-form`):
+  - `data-endpoint=""` → **modo demo**: valida, muestra el éxito con "(Demo: no se envió
+    nada.)" y no envía. Úsalo si el usuario no dio backend, y dilo en la entrega.
+  - `data-endpoint="https://formspree.io/f/…"` (o Netlify Forms / propio) → `POST` con
+    `FormData` y `Accept: application/json`; error visible si falla.
+  - Mensajes en `data-msg-ok`, `data-msg-invalid`, `data-msg-error` (textos en el HTML).
+  - `novalidate` + validación propia con `aria-invalid` y `role="status" aria-live="polite"`;
+    candado contra doble envío; funciona aunque GSAP no cargue.
 - Descarga: detecta plataforma (`navigator.userAgent`) para destacar la opción correcta;
   archivos pesados con `Content-Type` correcto en el hosting (`_headers`).
 - Contadores o estadísticas: **solo cifras que dé el usuario**. Anima de 0 al valor con
@@ -172,7 +188,9 @@ entre `top 95%` y `top 20%`. Excluye los fijados y el hero.
 - Sin fondo WebGL o a DPR 1; sin cursor; espiral con menos palabras y radio menor.
 - Secciones fijadas más cortas (300vh en vez de 480vh) y textos del manifiesto más cortos.
 - Secuencia de imágenes a 640×360.
-- Tarjetas a una columna; coreografías laterales con `x` más chico (±30 en vez de ±70)
-  para no provocar desborde horizontal.
+- Tarjetas a una columna; coreografías laterales con `x` más chico (±30 en vez de ±70).
+  Ojo: **±30 no evita el desborde** (una tarjeta a todo el ancho con 20 px de margen se sale
+  10 px), y el hero con `scale: 1.5` siempre se sale. Lo que lo evita es
+  `main { overflow-x: clip }` (en la plantilla). Verifica a 375 px con `scripts/verificar.cjs`.
 - El menú móvil es la única navegación: todas las secciones del menú de escritorio deben
   estar ahí, más el CTA.

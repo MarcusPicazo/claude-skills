@@ -30,6 +30,24 @@ scripts propios después:
 <script defer src="main.js"></script>
 ```
 
+**Si el CDN está bloqueado o no quieres depender de él** (sandbox, red corporativa,
+producción): copia las mismas versiones a `vendor/` desde npm y cambia las rutas.
+
+```bash
+npm pack gsap@3.12.5 lenis@1.1.20
+```
+
+```bash
+mkdir -p vendor && tar xzf gsap-3.12.5.tgz && cp package/dist/gsap.min.js package/dist/ScrollTrigger.min.js vendor/ && rm -rf package
+```
+
+```bash
+tar xzf lenis-1.1.20.tgz && cp package/dist/lenis.min.js package/dist/lenis.css vendor/ && rm -rf package *.tgz
+```
+
+Para solo *probar* sin tocar el HTML, `scripts/verificar.cjs --libs vendor` sirve esos
+archivos en lugar del CDN.
+
 `defer` mantiene el orden y no bloquea el render. No uses `window.onload` para arrancar
 (espera a todas las imágenes): `DOMContentLoaded` o simplemente `defer`.
 
@@ -49,7 +67,8 @@ al salir: `ScrollTrigger.getAll().forEach(t => t.kill()); lenis.destroy();` — 
 ## 2. Inicialización y sincronización
 
 ```js
-gsap.registerPlugin(ScrollTrigger);
+const hasGsap = !!(window.gsap && window.ScrollTrigger); // CDN caído → false
+if (hasGsap) gsap.registerPlugin(ScrollTrigger);
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let lenis = null;
@@ -79,9 +98,12 @@ Valores de partida:
   `@studio-freight/lenis` 1.0.x, `normalizeWheel: true`.
 - Elementos con su propio scroll (modal, lista larga): atributo `data-lenis-prevent`.
 
-Orden de arranque en `main.js`:
+Orden de arranque en `main.js` (lo funcional primero, sin depender de GSAP):
 
 ```js
+initNav();              // menú móvil, Escape, aria-expanded
+initForm();             // formularios
+if (!hasGsap) return;   // sin librerías: lo de arriba ya funciona y el contenido se lee
 initLenis();
 initHeader();
 initReveals();

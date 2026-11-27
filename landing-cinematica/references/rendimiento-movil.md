@@ -169,9 +169,12 @@ producto que se arma), una secuencia de cuadros es más fiable que el seek de vi
 - CPU media: prueba con DevTools → Performance → CPU 4× slowdown.
 - Chrome Android oculta la barra al bajar: el mismo problema de `vh` que iOS.
 - `navigator.connection.saveData` y `effectiveType` sí existen aquí: úsalos para `.stills`.
-- Rebote horizontal: algo se sale del ancho (decoraciones difuminadas, texto 3D). Busca
-  con `document.querySelectorAll('*')` cuál tiene `getBoundingClientRect().right >
-  innerWidth`; corrígelo y deja `overscroll-behavior-x: none` en `body`.
+- Rebote horizontal: algo se sale del ancho (hero que crece, columnas que convergen,
+  decoraciones difuminadas, texto 3D). `scripts/verificar.cjs` lo detecta y dice qué
+  elemento es, en cada punto del recorrido (muchas solo se salen *durante* la animación).
+  Arreglo: `main { overflow-x: clip }` (no rompe sticky) + `overscroll-behavior-x: none` en
+  `body`. `overflow-x: clip` solo en `body` no basta: se propaga al viewport y
+  `scrollWidth` sigue creciendo.
 
 ## 10. Cómo medir
 

@@ -7,6 +7,8 @@
   --color-accent: #7c5cff;
   --color-accent-2: #22d3ee;
   --color-on-accent: #0e0f13;
+  --color-success: #22d3ee;
+  --color-error: #ff8a8a;
   --glass: rgb(255 255 255 / 0.05);
   --glass-border: rgb(255 255 255 / 0.08);
 
@@ -28,6 +30,12 @@ body {
   overflow-x: clip;
   overscroll-behavior-x: none;
 }
+
+/* Recorta lo que las animaciones sacan de lado (hero con scale 1.5, columnas con x ±60,
+   giros 3D). `clip` no crea contenedor de scroll, así que NO rompe position: sticky.
+   Ponerlo solo en body no basta: el overflow de body se propaga al viewport y
+   documentElement.scrollWidth sigue creciendo (iOS puede dejar arrastrar de lado). */
+main { overflow-x: clip; }
 
 h1, h2, h3 { line-height: 1; letter-spacing: -0.04em; text-wrap: balance; margin: 0; }
 p { text-wrap: pretty; margin: 0; }
@@ -81,7 +89,7 @@ a { color: inherit; }
 .nav__links a:hover { color: var(--color-text); }
 .nav__cta { display: none; }
 .nav__burger { margin-left: auto; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--glass-border); background: var(--glass); color: var(--color-text); display: grid; place-items: center; }
-.nav__mobile { margin: .5rem auto 0; max-width: 72rem; display: flex; flex-direction: column; border-radius: 1.5rem; overflow: hidden; background: rgb(20 21 28 / .92); border: 1px solid var(--glass-border); }
+.nav__mobile { margin: .5rem auto 0; max-width: 72rem; display: flex; flex-direction: column; border-radius: 1.5rem; overflow: hidden; background: color-mix(in oklab, var(--color-bg) 92%, transparent); border: 1px solid var(--glass-border); }
 .nav__mobile[hidden] { display: none; }
 .nav__mobile a:not(.btn) { padding: 1rem 1.5rem; text-decoration: none; border-bottom: 1px solid var(--glass-border); }
 .nav__mobile .btn { margin: 1rem; }
@@ -139,13 +147,36 @@ a { color: inherit; }
 .row h3 { font-size: 1.4rem; margin-bottom: .4rem; }
 .row p { color: var(--color-text-soft); }
 
-.flip-row { display: grid; gap: 1rem; }
-@media (min-width: 768px) { .flip-row { grid-template-columns: 1fr 1fr; } }
-.flip-row .btn { justify-self: start; margin-top: .5rem; }
+.wrap--narrow { max-width: 40rem; }
+
+/* Testimonios */
+.quotes { display: grid; gap: 1rem; }
+@media (min-width: 768px) { .quotes { grid-template-columns: repeat(3, 1fr); } }
+.quote { margin: 0; }
+.quote blockquote { margin: 0; font-size: 1.2rem; font-weight: 600; line-height: 1.35; }
+.quote figcaption { color: var(--color-text-soft); font-size: .9rem; }
+.tag { justify-self: start; padding: .2rem .7rem; border-radius: 999px; font-size: .7rem; font-weight: 600; letter-spacing: .15em; text-transform: uppercase; color: var(--color-on-accent); background: var(--color-accent-2); }
+
+/* Lista de espera */
+.waitlist > p { color: var(--color-text-soft); }
+.form { display: grid; gap: 1rem; }
+.field { display: grid; gap: .4rem; font-weight: 600; font-size: .9rem; }
+.field small { font-weight: 400; color: var(--color-text-soft); }
+.field input { min-height: 48px; padding: .75rem 1rem; border-radius: 1rem; border: 1px solid var(--glass-border); background: var(--glass); color: var(--color-text); font: inherit; font-weight: 400; }
+.field input::placeholder { color: var(--color-text-soft); opacity: .7; }
+.field input[aria-invalid='true'] { border-color: var(--color-error); }
+.form .btn { justify-self: start; }
+.form__msg { min-height: 1.5em; }
+.form__msg.is-ok { color: var(--color-success); }
+.form__msg.is-error { color: var(--color-error); }
 
 /* ---------- Pie y aviso ---------- */
 .footer { padding: 3rem 1.25rem; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; max-width: 72rem; margin: 0 auto; color: var(--color-text-soft); font-size: .9rem; }
 .hint { position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%); z-index: 90; display: grid; justify-items: center; gap: .4rem; font-size: .7rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--color-text-soft); opacity: 0; transition: opacity .7s; pointer-events: none; }
+
+/* Sin JS el manifiesto no necesita 400vh de recorrido: se lee como una sección normal. */
+html:not(.js) .statement { height: auto; }
+html:not(.js) .statement__sticky { position: static; height: auto; padding: 6rem 1.25rem; }
 
 /* ---------- Movimiento reducido ---------- */
 @media (prefers-reduced-motion: reduce) {
